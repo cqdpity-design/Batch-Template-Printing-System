@@ -3,15 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>批量打印系统</title>
+    <title>BatchPrint Pro - 智能批量打印系统</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231890ff'/><text x='16' y='22' font-size='14' fill='white' text-anchor='middle' font-weight='bold'>BP</text></svg>">
 </head>
 <body>
-    <div class="app">
+    <!-- 启动画面 -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <svg viewBox="0 0 64 64" width="64" height="64">
+                    <rect width="64" height="64" rx="12" fill="#1890ff"/>
+                    <text x="32" y="44" font-size="28" fill="white" text-anchor="middle" font-weight="bold" font-family="system-ui">BP</text>
+                </svg>
+            </div>
+            <div class="splash-title">BatchPrint Pro</div>
+            <div class="splash-subtitle">智能批量打印系统</div>
+            <div class="splash-version">v2.2</div>
+            <div class="splash-loading">
+                <div class="splash-bar"></div>
+            </div>
+            <div class="splash-copyright">© 2026 得普科技 版权所有</div>
+        </div>
+    </div>
+
+    <div class="app hidden" id="app">
         <!-- 顶部工具栏 -->
         <div class="toolbar">
+            <div class="toolbar-brand">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <rect width="24" height="24" rx="4" fill="#1890ff"/>
+                        <text x="12" y="17" font-size="11" fill="white" text-anchor="middle" font-weight="bold">BP</text>
+                    </svg>
+                </div>
+                <span class="brand-name">BatchPrint Pro</span>
+            </div>
             <div class="toolbar-group">
-                <label>纸张：</label>
+                <label>纸张</label>
                 <select id="paperSize">
                     <option value="a4" data-w="210" data-h="297">A4 (210×297mm)</option>
                     <option value="a5" data-w="148" data-h="210">A5 (148×210mm)</option>
@@ -24,32 +53,63 @@
                 </span>
             </div>
             <div class="toolbar-group">
-                <button id="btnBgImage">📷 上传背景图</button>
+                <button id="btnBgImage">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    背景图
+                </button>
                 <input type="file" id="bgImageInput" accept="image/*" hidden>
-                <button id="btnClearBg">清除背景</button>
+                <button id="btnClearBg">清除</button>
                 <label class="toggle-label">
                     <input type="checkbox" id="printBgToggle" checked>
-                    <span>打印时包含背景图</span>
+                    <span>打印背景</span>
                 </label>
             </div>
             <div class="toolbar-group">
-                <button id="btnSaveProject">💾 保存工程</button>
-                <button id="btnLoadProject">📂 加载工程</button>
+                <button id="btnSaveProject">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    保存工程
+                </button>
+                <button id="btnLoadProject">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    加载工程
+                </button>
                 <input type="file" id="projectInput" accept=".json" hidden>
                 <span class="toolbar-sep"></span>
-                <button id="btnSaveTemplate">💾 保存模板</button>
-                <button id="btnLoadTemplate">📂 加载模板</button>
+                <button id="btnSaveTemplate">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    保存模板
+                </button>
+                <button id="btnLoadTemplate">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                    加载模板
+                </button>
                 <input type="file" id="templateInput" accept=".json" hidden>
             </div>
             <div class="toolbar-group">
-                <button id="btnPreview" class="btn-primary">👁 预览</button>
-                <button id="btnPrint" class="btn-primary">🖨 批量打印</button>
+                <button id="btnPreview" class="btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    预览
+                </button>
+                <button id="btnPrint" class="btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    批量打印
+                </button>
             </div>
             <div class="toolbar-group zoom-group">
-                <button id="btnZoomOut" title="缩小">−</button>
+                <button id="btnZoomOut" title="缩小">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
                 <span id="zoomValue">100%</span>
-                <button id="btnZoomIn" title="放大">+</button>
+                <button id="btnZoomIn" title="放大">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
                 <button id="btnZoomFit" title="适配窗口">适配</button>
+            </div>
+            <div class="toolbar-spacer"></div>
+            <div class="toolbar-group">
+                <button id="btnAbout" title="关于">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </button>
             </div>
         </div>
 
@@ -59,18 +119,18 @@
                 <button class="panel-toggle" id="toggleLeft" title="收起">◀</button>
                 <div class="panel-content">
                     <div class="panel-section">
-                        <h3>1. 导入Excel</h3>
+                        <h3><span class="section-num">1</span>导入Excel</h3>
                         <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
                         <div id="excelInfo" class="info-text"></div>
                     </div>
                     <div class="panel-section">
-                        <h3>2. 可用字段</h3>
+                        <h3><span class="section-num">2</span>可用字段</h3>
                         <div id="fieldList" class="field-list">
                             <p class="placeholder">请先上传Excel</p>
                         </div>
                     </div>
                     <div class="panel-section">
-                        <h3>3. 数据预览</h3>
+                        <h3><span class="section-num">3</span>数据预览</h3>
                         <div id="dataPreview" class="data-preview">
                             <p class="placeholder">暂无数据</p>
                         </div>
@@ -107,93 +167,93 @@
                 <div class="panel-content">
                     <div class="panel-section">
                         <h3>字段属性</h3>
-                    <div id="propPanel" class="prop-panel disabled">
-                        <div class="prop-row">
-                            <label>绑定字段</label>
-                            <select id="propField"></select>
-                        </div>
-                        <div class="prop-row">
-                            <label>左边距 (mm)</label>
-                            <input type="number" id="propX" step="0.1">
-                        </div>
-                        <div class="prop-row">
-                            <label>上边距 (mm)</label>
-                            <input type="number" id="propY" step="0.1">
-                        </div>
-                        <div class="prop-row">
-                            <label>宽度 (mm)</label>
-                            <input type="number" id="propW" step="0.1" placeholder="自动">
-                        </div>
-                        <div class="prop-row">
-                            <label>字体</label>
-                            <input type="text" id="propFont" list="fontList" placeholder="选择或输入字体名称">
-                            <datalist id="fontList"></datalist>
-                        </div>
-                        <div class="font-actions">
-                            <button id="btnAddCustomFont" type="button">+ 添加自定义字体</button>
-                            <button id="btnRescanFonts" type="button">刷新字体列表</button>
-                        </div>
-                        <div id="customFontRow" class="prop-row hidden">
-                            <label>新字体名称</label>
-                            <input type="text" id="customFontName" placeholder="输入刚安装的字体名">
-                            <button id="btnConfirmAddFont" type="button" style="margin-top:5px;">确认添加</button>
-                        </div>
-                        <div class="prop-row">
-                            <label>字号 (pt)</label>
-                            <input type="number" id="propSize" min="1" max="200" value="12">
-                        </div>
-                        <div class="prop-row">
-                            <label>颜色</label>
-                            <div class="color-input-row">
-                                <input type="color" id="propColor" value="#000000">
-                                <input type="text" id="propColorHex" value="#000000" placeholder="#000000" maxlength="7">
+                        <div id="propPanel" class="prop-panel disabled">
+                            <div class="prop-row">
+                                <label>绑定字段</label>
+                                <select id="propField"></select>
+                            </div>
+                            <div class="prop-row">
+                                <label>左边距 (mm)</label>
+                                <input type="number" id="propX" step="0.1">
+                            </div>
+                            <div class="prop-row">
+                                <label>上边距 (mm)</label>
+                                <input type="number" id="propY" step="0.1">
+                            </div>
+                            <div class="prop-row">
+                                <label>宽度 (mm)</label>
+                                <input type="number" id="propW" step="0.1" placeholder="自动">
+                            </div>
+                            <div class="prop-row">
+                                <label>字体</label>
+                                <input type="text" id="propFont" list="fontList" placeholder="选择或输入字体名称">
+                                <datalist id="fontList"></datalist>
+                            </div>
+                            <div class="font-actions">
+                                <button id="btnAddCustomFont" type="button">+ 添加字体</button>
+                                <button id="btnRescanFonts" type="button">刷新</button>
+                            </div>
+                            <div id="customFontRow" class="prop-row hidden">
+                                <label>新字体名称</label>
+                                <input type="text" id="customFontName" placeholder="输入刚安装的字体名">
+                                <button id="btnConfirmAddFont" type="button" style="margin-top:5px;">确认添加</button>
+                            </div>
+                            <div class="prop-row">
+                                <label>字号 (pt)</label>
+                                <input type="number" id="propSize" min="1" max="200" value="12">
+                            </div>
+                            <div class="prop-row">
+                                <label>颜色</label>
+                                <div class="color-input-row">
+                                    <input type="color" id="propColor" value="#000000">
+                                    <input type="text" id="propColorHex" value="#000000" placeholder="#000000" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="prop-row">
+                                <label>水平对齐</label>
+                                <select id="propAlign">
+                                    <option value="left">左对齐</option>
+                                    <option value="center">居中</option>
+                                    <option value="right">右对齐</option>
+                                </select>
+                            </div>
+                            <div class="prop-row">
+                                <label>垂直对齐</label>
+                                <select id="propVAlign">
+                                    <option value="top">顶部</option>
+                                    <option value="middle">居中</option>
+                                    <option value="bottom">底部</option>
+                                </select>
+                            </div>
+                            <div class="prop-row">
+                                <label>加粗</label>
+                                <input type="checkbox" id="propBold">
+                            </div>
+                            <div class="prop-actions">
+                                <button id="btnBringFront" type="button">置顶</button>
+                                <button id="btnSendBack" type="button">置底</button>
+                            </div>
+                            <div class="prop-actions">
+                                <button id="btnDeleteField" class="btn-danger">删除字段</button>
                             </div>
                         </div>
-                        <div class="prop-row">
-                            <label>水平对齐</label>
-                            <select id="propAlign">
-                                <option value="left">左对齐</option>
-                                <option value="center">居中</option>
-                                <option value="right">右对齐</option>
-                            </select>
-                        </div>
-                        <div class="prop-row">
-                            <label>垂直对齐</label>
-                            <select id="propVAlign">
-                                <option value="top">顶部</option>
-                                <option value="middle">居中</option>
-                                <option value="bottom">底部</option>
-                            </select>
-                        </div>
-                        <div class="prop-row">
-                            <label>加粗</label>
-                            <input type="checkbox" id="propBold">
-                        </div>
-                        <div class="prop-actions">
-                            <button id="btnBringFront" type="button" style="width:48%;">置顶</button>
-                            <button id="btnSendBack" type="button" style="width:48%;">置底</button>
-                        </div>
-                        <div class="prop-actions">
-                            <button id="btnDeleteField" class="btn-danger">删除字段</button>
-                        </div>
+                        <p id="noSelection" class="placeholder">点击画布中的字段进行编辑</p>
                     </div>
-                    <p id="noSelection" class="placeholder">点击画布中的字段进行编辑</p>
+                    <div class="panel-section">
+                        <h3>操作提示</h3>
+                        <ul class="tips">
+                            <li><span class="tip-icon">1</span>从左侧拖拽字段到画布</li>
+                            <li><span class="tip-icon">2</span>点击字段选中，拖拽移动</li>
+                            <li><span class="tip-icon">3</span>方向键微调 0.1mm，Shift+方向键 1mm</li>
+                            <li><span class="tip-icon">4</span>拖拽时红色参考线提示对齐位置</li>
+                            <li><span class="tip-icon">5</span>右侧精确调整位置和样式</li>
+                            <li><span class="tip-icon">6</span>字段可置顶/置底调整层级</li>
+                            <li><span class="tip-icon">7</span>上传背景图辅助字段对齐</li>
+                            <li><span class="tip-icon">8</span>页面刷新后自动恢复配置</li>
+                            <li><span class="tip-icon">9</span>工具栏缩放按钮调整画布显示</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="panel-section">
-                    <h3>操作提示</h3>
-                    <ul class="tips">
-                        <li>从左侧拖拽字段到画布</li>
-                        <li>点击字段选中，拖拽移动</li>
-                        <li>键盘方向键微调：0.1mm / Shift+方向：1mm</li>
-                        <li>拖拽时红色参考线提示对齐位置</li>
-                        <li>右侧精确调整位置和样式</li>
-                        <li>字段可置顶/置底调整层级</li>
-                        <li>上传背景图对齐字段位置</li>
-                        <li>页面刷新后自动恢复上次配置</li>
-                        <li>缩放：工具栏 +/−/适配 调整画布显示</li>
-                    </ul>
-                </div>
-            </div>
             </div>
         </div>
     </div>
@@ -207,9 +267,15 @@
             </div>
             <div class="modal-body">
                 <div class="preview-nav">
-                    <button id="prevPage">&larr; 上一条</button>
+                    <button id="prevPage">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        上一条
+                    </button>
                     <span id="pageInfo">第 1 / 10 条</span>
-                    <button id="nextPage">下一条 &rarr;</button>
+                    <button id="nextPage">
+                        下一条
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                 </div>
                 <div id="previewCanvas" class="preview-canvas"></div>
                 <div class="preview-footer" id="previewFooter">
@@ -263,6 +329,50 @@
                     <div class="range-actions">
                         <button id="btnCancelPrint">取消</button>
                         <button id="btnPreviewThenPrint" class="btn-primary">预览后打印</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于弹窗 -->
+    <div id="aboutModal" class="modal hidden">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h3>关于 BatchPrint Pro</h3>
+                <button class="btn-close" id="closeAbout">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-content">
+                    <div class="about-logo">
+                        <svg viewBox="0 0 64 64" width="64" height="64">
+                            <rect width="64" height="64" rx="12" fill="#1890ff"/>
+                            <text x="32" y="44" font-size="28" fill="white" text-anchor="middle" font-weight="bold" font-family="system-ui">BP</text>
+                        </svg>
+                    </div>
+                    <div class="about-title">BatchPrint Pro</div>
+                    <div class="about-version">版本 2.2</div>
+                    <div class="about-desc">智能批量打印系统 — 邮件合并功能的纯前端实现</div>
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            数据不上传服务器，本地处理更安全
+                        </div>
+                        <div class="about-feature">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            毫米级精确定位，所见即所得
+                        </div>
+                        <div class="about-feature">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            支持自定义纸张、字体、背景图
+                        </div>
+                    </div>
+                    <div class="about-divider"></div>
+                    <div class="about-copyright">© 2026 得普科技 版权所有</div>
+                    <div class="about-links">
+                        <a href="#" onclick="alert('官方网站建设中');return false;">官方网站</a>
+                        <a href="#" onclick="alert('邮箱: support@depu-tech.com');return false;">技术支持</a>
+                        <a href="#" onclick="alert('邮箱: business@depu-tech.com');return false;">商务合作</a>
                     </div>
                 </div>
             </div>

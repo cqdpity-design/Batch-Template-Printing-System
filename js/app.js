@@ -1,6 +1,7 @@
 /**
- * 批量打印系统 - 核心逻辑
+ * BatchPrint Pro - 智能批量打印系统
  * 邮件合并功能的纯前端实现
+ * © 2026 得普科技 版权所有
  */
 
 // ===== 配置常量 =====
@@ -28,10 +29,20 @@ const $ = id => document.getElementById(id);
 
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
-    initCanvas();
-    scanSystemFonts();
-    bindEvents();
-    restoreFromStorage();
+    // 启动画面：1.8秒后淡出，然后初始化应用
+    setTimeout(() => {
+        const splash = $('splashScreen');
+        const app = $('app');
+        if (splash && app) {
+            splash.classList.add('hidden');
+            app.classList.remove('hidden');
+        }
+        // 初始化应用
+        initCanvas();
+        scanSystemFonts();
+        bindEvents();
+        restoreFromStorage();
+    }, 1800);
 });
 
 // ===== localStorage 自动保存/恢复 =====
@@ -544,6 +555,10 @@ function bindEvents() {
     $('nextPage').addEventListener('click', () => navigatePreview(1));
     $('btnPrintFromPreview').addEventListener('click', printFromPreview);
     $('btnBackToRange').addEventListener('click', backToRange);
+
+    // 关于弹窗
+    $('btnAbout').addEventListener('click', () => $('aboutModal').classList.remove('hidden'));
+    $('closeAbout').addEventListener('click', () => $('aboutModal').classList.add('hidden'));
 
     // 表头确认弹窗
     $('closeHeaderModal').addEventListener('click', closeHeaderModal);
