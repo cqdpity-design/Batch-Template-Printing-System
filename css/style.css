@@ -142,19 +142,6 @@ button.btn-danger:hover {
     overflow: hidden;
 }
 
-.panel {
-    background: #fff;
-    border-right: 1px solid #d9d9d9;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.panel-left {
-    width: 240px;
-    flex-shrink: 0;
-}
-
 .panel-center {
     flex: 1;
     background: #e8e8e8;
@@ -163,10 +150,71 @@ button.btn-danger:hover {
     overflow: auto;
 }
 
+.panel {
+    background: #fff;
+    border-right: 1px solid #d9d9d9;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transition: width 0.25s ease;
+}
+
+.panel-left {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.panel-left.collapsed {
+    width: 24px;
+}
+
 .panel-right {
     width: 240px;
     flex-shrink: 0;
     border-right: none;
+}
+
+.panel-right.collapsed {
+    width: 24px;
+}
+
+.panel-toggle {
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.panel-toggle:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.panel-right .panel-toggle {
+    right: auto;
+    left: 4px;
+}
+
+.panel.collapsed .panel-content {
+    display: none;
+}
+
+.panel.collapsed .panel-toggle {
+    position: static;
+    margin: 8px auto 0;
 }
 
 .panel-section {

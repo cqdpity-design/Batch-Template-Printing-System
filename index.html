@@ -55,22 +55,25 @@
 
         <div class="main">
             <!-- 左侧面板：数据 -->
-            <div class="panel panel-left">
-                <div class="panel-section">
-                    <h3>1. 导入Excel</h3>
-                    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
-                    <div id="excelInfo" class="info-text"></div>
-                </div>
-                <div class="panel-section">
-                    <h3>2. 可用字段</h3>
-                    <div id="fieldList" class="field-list">
-                        <p class="placeholder">请先上传Excel</p>
+            <div class="panel panel-left" id="panelLeft">
+                <button class="panel-toggle" id="toggleLeft" title="收起">◀</button>
+                <div class="panel-content">
+                    <div class="panel-section">
+                        <h3>1. 导入Excel</h3>
+                        <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+                        <div id="excelInfo" class="info-text"></div>
                     </div>
-                </div>
-                <div class="panel-section">
-                    <h3>3. 数据预览</h3>
-                    <div id="dataPreview" class="data-preview">
-                        <p class="placeholder">暂无数据</p>
+                    <div class="panel-section">
+                        <h3>2. 可用字段</h3>
+                        <div id="fieldList" class="field-list">
+                            <p class="placeholder">请先上传Excel</p>
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>3. 数据预览</h3>
+                        <div id="dataPreview" class="data-preview">
+                            <p class="placeholder">暂无数据</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -99,9 +102,11 @@
             </div>
 
             <!-- 右侧面板：属性 -->
-            <div class="panel panel-right">
-                <div class="panel-section">
-                    <h3>字段属性</h3>
+            <div class="panel panel-right" id="panelRight">
+                <button class="panel-toggle" id="toggleRight" title="收起">▶</button>
+                <div class="panel-content">
+                    <div class="panel-section">
+                        <h3>字段属性</h3>
                     <div id="propPanel" class="prop-panel disabled">
                         <div class="prop-row">
                             <label>绑定字段</label>
@@ -188,6 +193,7 @@
                         <li>缩放：工具栏 +/−/适配 调整画布显示</li>
                     </ul>
                 </div>
+            </div>
             </div>
         </div>
     </div>

@@ -517,6 +517,22 @@ function bindEvents() {
     canvas.addEventListener('dragover', e => e.preventDefault());
     canvas.addEventListener('drop', onFieldDrop);
 
+    // 面板折叠/展开
+    $('toggleLeft').addEventListener('click', () => {
+        const panel = $('panelLeft');
+        const btn = $('toggleLeft');
+        panel.classList.toggle('collapsed');
+        btn.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+        btn.title = panel.classList.contains('collapsed') ? '展开' : '收起';
+    });
+    $('toggleRight').addEventListener('click', () => {
+        const panel = $('panelRight');
+        const btn = $('toggleRight');
+        panel.classList.toggle('collapsed');
+        btn.textContent = panel.classList.contains('collapsed') ? '◀' : '▶';
+        btn.title = panel.classList.contains('collapsed') ? '展开' : '收起';
+    });
+
     // 预览弹窗键盘翻页
     document.addEventListener('keydown', (e) => {
         if ($('previewModal').classList.contains('hidden')) return;
