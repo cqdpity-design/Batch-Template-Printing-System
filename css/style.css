@@ -217,6 +217,12 @@ button.btn-danger:hover {
     margin: 8px auto 0;
 }
 
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
 .panel-section {
     padding: 15px;
     border-bottom: 1px solid #f0f0f0;
