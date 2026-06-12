@@ -4,7 +4,8 @@
  */
 
 // ===== 配置常量 =====
-const MM_TO_PX = 3.7795275591; // 1mm ≈ 3.78px (96dpi)
+const BASE_MM_TO_PX = 3.7795275591; // 1mm ≈ 3.78px (96dpi)
+let MM_TO_PX = BASE_MM_TO_PX;       // 运行时根据缩放动态调整
 
 // ===== 全局状态 =====
 const state = {
@@ -18,7 +19,8 @@ const state = {
     excelHeaders: [],  // Excel表头
     isDragging: false,
     dragOffset: { x: 0, y: 0 },
-    customFonts: []    // 用户手动添加的字体
+    customFonts: [],   // 用户手动添加的字体
+    zoom: 1.0          // 画布显示缩放比例
 };
 
 // ===== DOM元素 =====
@@ -182,6 +184,36 @@ function addCustomFont() {
     });
 }
 
+function setZoom(ratio) {
+    // 限制缩放范围：30% ~ 300%
+    ratio = Math.max(0.3, Math.min(3.0, ratio));
+    state.zoom = Math.round(ratio * 10) / 10; // 保留一位小数
+    MM_TO_PX = BASE_MM_TO_PX * state.zoom;
+    $('zoomValue').textContent = Math.round(state.zoom * 100) + '%';
+
+    // 重绘画布和标尺
+    updateCanvasSize();
+    // 重绘所有字段
+    state.fields.forEach(field => {
+        updateFieldElement(field);
+    });
+}
+
+function zoomToFit() {
+    // 计算画布区域可用空间
+    const wrapper = document.querySelector('.canvas-wrapper');
+    const availW = wrapper.clientWidth - 80;  // 留边距
+    const availH = wrapper.clientHeight - 80;
+    const canvasW = state.paperWidth * BASE_MM_TO_PX;
+    const canvasH = state.paperHeight * BASE_MM_TO_PX;
+
+    const ratioX = availW / canvasW;
+    const ratioY = availH / canvasH;
+    const ratio = Math.min(ratioX, ratioY, 2.0); // 最大放大到 200%
+
+    setZoom(ratio);
+}
+
 function initCanvas() {
     updateCanvasSize();
     renderRulers();
@@ -282,6 +314,11 @@ function bindEvents() {
     // 打印
     $('btnPreview').addEventListener('click', openPreview);
     $('btnPrint').addEventListener('click', openPrintRange);
+
+    // 缩放控制
+    $('btnZoomIn').addEventListener('click', () => setZoom(state.zoom + 0.1));
+    $('btnZoomOut').addEventListener('click', () => setZoom(state.zoom - 0.1));
+    $('btnZoomFit').addEventListener('click', zoomToFit);
 
     // Excel
     $('excelInput').addEventListener('change', onExcelUpload);
