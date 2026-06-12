@@ -129,6 +129,43 @@
 
 ---
 
+## v2.1 — 交互优化（2026-06-13）
+
+### P0 功能缺陷修复
+
+| 问题 | 修复 |
+|------|------|
+| 右键点击画布会错误选中字段 | `onCanvasMouseDown` 增加 `e.button !== 0` 校验 |
+| 拖拽中途按 ESC 取消，`.dragging` 样式残留 | 为 `fieldList` 增加 `dragend` 事件清理 |
+| Excel 首行全空时 colCount=0 导致零字段 | 取 `Math.max(json[0].length, json[1]?.length \|\| 0)` |
+| 背景图 FileReader 失败无提示 | 增加 `reader.onerror` 处理 |
+
+### P1 体验断层修复
+
+| 问题 | 修复 |
+|------|------|
+| 点击面板不取消字段选中 | 全局 `mousedown` 监听，点击非字段/非面板区域即取消 |
+| 3位 Hex 颜色不支持（如 #fff） | 正则扩展为 `{3}({3})?`，并自动展开为6位 |
+| 字段重叠时无法调整层级 | 属性面板新增「置顶」「置底」按钮，通过 DOM 顺序控制 |
+| Excel 列数过多时数据预览溢出 | `.data-preview` `overflow-y: auto` 改为 `overflow: auto` |
+| 操作提示未更新 | 新增层级、缩放、自动恢复的说明 |
+| 模板文件不包含 zoom 比例 | `saveTemplate` / `loadTemplate` 加入 `zoom` |
+
+### P2 细节优化
+
+| 问题 | 修复 |
+|------|------|
+| 预览弹窗翻页无键盘支持 | `ArrowLeft` / `ArrowRight` 翻页；画布微调在弹窗打开时自动禁用 |
+| 画布缩放后选中边框视觉变细 | `.canvas-field` border 使用 `calc(1px * var(--canvas-zoom))` 动态调整 |
+| 代码内 `debouncedSave()` 缩进错误 | `setZoom` / `addCustomFont` 中补全缩进 |
+| localStorage 满时静默失败 | `catch` 块改为 `console.warn` 提示用户手动导出 |
+
+### 技术决策
+- 选中边框缩放使用 CSS 自定义属性 `--canvas-zoom`，避免 JS 每帧计算
+- 键盘事件全局统一监听，通过弹窗可见性做条件分流
+
+---
+
 ### 工具栏布局优化
 - 工具栏改为 `flex-wrap: nowrap` + 横向滚动，缩放控件不再换行跳动
 - 各控件间距压缩，更紧凑

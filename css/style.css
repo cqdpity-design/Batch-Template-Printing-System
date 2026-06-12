@@ -236,7 +236,7 @@ input[type="file"] {
 /* ===== 数据预览 ===== */
 .data-preview {
     max-height: 200px;
-    overflow-y: auto;
+    overflow: auto;
 }
 
 .data-preview table {
@@ -307,7 +307,7 @@ input[type="file"] {
 .canvas-field {
     position: absolute;
     padding: 2px 6px;
-    border: 1px dashed transparent;
+    border: calc(1px * var(--canvas-zoom, 1)) dashed transparent;
     border-radius: 2px;
     cursor: pointer;
     user-select: none;
@@ -490,6 +490,12 @@ input[type="file"] {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid #f0f0f0;
+    display: flex;
+    gap: 8px;
+}
+
+.prop-actions button {
+    flex: 1;
 }
 
 .tips {

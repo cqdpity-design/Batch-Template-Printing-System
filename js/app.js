@@ -67,7 +67,7 @@ function saveToStorage() {
         };
         localStorage.setItem('batchPrint_snapshot', JSON.stringify(snapshot));
     } catch (e) {
-        // localStorage 可能已满或不可用
+        console.warn('localStorage 保存失败，请手动导出工程文件备份');
     }
 }
 
@@ -271,7 +271,7 @@ function addCustomFont() {
         if (field) {
             field.font = name;
             updateFieldElement(field);
-    debouncedSave();
+            debouncedSave();
             updatePropPanel();
         }
         $('propFont').value = name;
@@ -285,7 +285,7 @@ function addCustomFont() {
         if (field) {
             field.font = name;
             updateFieldElement(field);
-    debouncedSave();
+            debouncedSave();
             updatePropPanel();
         }
         $('propFont').value = name;
@@ -301,14 +301,15 @@ function setZoom(ratio) {
     state.zoom = Math.round(ratio * 10) / 10; // 保留一位小数
     MM_TO_PX = BASE_MM_TO_PX * state.zoom;
     $('zoomValue').textContent = Math.round(state.zoom * 100) + '%';
+    $('canvas').style.setProperty('--canvas-zoom', state.zoom);
 
     // 重绘画布和标尺
     updateCanvasSize();
     // 重绘所有字段
     state.fields.forEach(field => {
         updateFieldElement(field);
-    debouncedSave();
     });
+    debouncedSave();
 }
 
 function zoomToFit() {
@@ -411,7 +412,7 @@ function bindEvents() {
     $('btnClearBg').addEventListener('click', clearBgImage);
     $('printBgToggle').addEventListener('change', (e) => {
         state.printBg = e.target.checked;
-    debouncedSave();
+        debouncedSave();
     });
 
     // 模板
@@ -489,20 +490,39 @@ function bindEvents() {
         alert('字体列表已刷新');
     });
 
+    // 字段层级控制
+    $('btnBringFront').addEventListener('click', bringFieldToFront);
+    $('btnSendBack').addEventListener('click', sendFieldToBack);
+
     // 画布拖拽交互
     const canvas = $('fieldLayer');
     canvas.addEventListener('mousedown', onCanvasMouseDown);
     document.addEventListener('mousemove', onCanvasMouseMove);
     document.addEventListener('mouseup', onCanvasMouseUp);
 
+    // 点击非字段区域取消选中
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.canvas-field') && !e.target.closest('.panel')) {
+            deselectAll();
+        }
+    });
+
     // 字段列表拖拽
     $('fieldList').addEventListener('dragstart', onFieldDragStart);
+    $('fieldList').addEventListener('dragend', () => {
+        document.querySelectorAll('.field-tag.dragging').forEach(el => el.classList.remove('dragging'));
+    });
 
     // 画布接收拖拽
     canvas.addEventListener('dragover', e => e.preventDefault());
     canvas.addEventListener('drop', onFieldDrop);
 
-    // 预览弹窗
+    // 预览弹窗键盘翻页
+    document.addEventListener('keydown', (e) => {
+        if ($('previewModal').classList.contains('hidden')) return;
+        if (e.key === 'ArrowLeft') navigatePreview(-1);
+        if (e.key === 'ArrowRight') navigatePreview(1);
+    });
     $('closePreview').addEventListener('click', closePreview);
     $('prevPage').addEventListener('click', () => navigatePreview(-1));
     $('nextPage').addEventListener('click', () => navigatePreview(1));
@@ -563,9 +583,10 @@ function onBgImageUpload(e) {
     const reader = new FileReader();
     reader.onload = () => {
         state.bgImage = reader.result;
-    debouncedSave();
+        debouncedSave();
         renderBgImage();
     };
+    reader.onerror = () => alert('图片读取失败，请检查文件格式');
     reader.readAsDataURL(file);
 }
 
@@ -663,7 +684,7 @@ function confirmHeader(hasHeader) {
         state.excelData = json.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
     } else {
         // 第一行也是数据，生成默认字段名
-        const colCount = json[0].length;
+        const colCount = Math.max(json[0].length, json[1]?.length || 0);
         state.excelHeaders = [];
         for (let i = 0; i < colCount; i++) {
             state.excelHeaders.push(`字段${i + 1}`);
@@ -850,6 +871,7 @@ function updateFieldCount() {
 const SNAP_THRESHOLD = 2; // mm 参考线显示阈值
 
 function onCanvasMouseDown(e) {
+    if (e.button !== 0) return;
     const target = e.target.closest('.canvas-field');
     if (!target) {
         deselectAll();
@@ -996,6 +1018,8 @@ function hideGuides() {
 // ===== 键盘微调 =====
 document.addEventListener('keydown', (e) => {
     if (!state.selectedField) return;
+    // 预览弹窗打开时不响应画布微调
+    if (!$('previewModal').classList.contains('hidden')) return;
     // 只响应方向键
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
 
@@ -1099,12 +1123,16 @@ function onColorHexChange() {
     if (hex && !hex.startsWith('#')) {
         hex = '#' + hex;
     }
-    // 校验是否是有效的 hex 颜色
-    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    // 校验是否是有效的 hex 颜色（支持3位和6位）
+    if (/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/.test(hex)) {
+        // 3位 hex 展开为6位
+        if (hex.length === 4) {
+            hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+        }
         field.color = hex;
         $('propColor').value = hex;
         updateFieldElement(field);
-    debouncedSave();
+        debouncedSave();
     }
 }
 
@@ -1118,6 +1146,30 @@ function deleteSelectedField() {
     debouncedSave();
 }
 
+function bringFieldToFront() {
+    if (!state.selectedField) return;
+    const idx = state.fields.findIndex(f => f.id === state.selectedField);
+    if (idx < 0) return;
+    const field = state.fields.splice(idx, 1)[0];
+    state.fields.push(field);
+
+    const el = $(field.id);
+    if (el) $('fieldLayer').appendChild(el);
+    debouncedSave();
+}
+
+function sendFieldToBack() {
+    if (!state.selectedField) return;
+    const idx = state.fields.findIndex(f => f.id === state.selectedField);
+    if (idx < 0) return;
+    const field = state.fields.splice(idx, 1)[0];
+    state.fields.unshift(field);
+
+    const el = $(field.id);
+    if (el) $('fieldLayer').insertBefore(el, $('fieldLayer').firstChild);
+    debouncedSave();
+}
+
 // ===== 模板保存/加载 =====
 function saveTemplate() {
     const template = {
@@ -1126,6 +1178,7 @@ function saveTemplate() {
         paperHeight: state.paperHeight,
         bgImage: state.bgImage,
         printBg: state.printBg,
+        zoom: state.zoom,
         fields: state.fields.map(f => ({
             fieldName: f.fieldName,
             x: f.x,
@@ -1164,6 +1217,11 @@ function loadTemplate(e) {
             $('paperW').value = state.paperWidth;
             $('paperH').value = state.paperHeight;
             updateCanvasSize();
+
+            // 恢复缩放
+            if (template.zoom) {
+                setZoom(template.zoom);
+            }
 
             // 恢复背景
             state.bgImage = template.bgImage || null;
