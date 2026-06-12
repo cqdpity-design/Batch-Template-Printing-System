@@ -31,11 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     scanSystemFonts();
     bindEvents();
-    restoreFromStorage(); // 页面加载时自动恢复上次配置
-    window.addEventListener('beforeunload', saveToStorage); // 刷新/关闭前自动保存
+    restoreFromStorage();
 });
 
 // ===== localStorage 自动保存/恢复 =====
+let saveTimer = null;
+function debouncedSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToStorage, 500);
+}
+
 function saveToStorage() {
     try {
         const snapshot = {
@@ -266,6 +271,7 @@ function addCustomFont() {
         if (field) {
             field.font = name;
             updateFieldElement(field);
+    debouncedSave();
             updatePropPanel();
         }
         $('propFont').value = name;
@@ -279,6 +285,7 @@ function addCustomFont() {
         if (field) {
             field.font = name;
             updateFieldElement(field);
+    debouncedSave();
             updatePropPanel();
         }
         $('propFont').value = name;
@@ -300,6 +307,7 @@ function setZoom(ratio) {
     // 重绘所有字段
     state.fields.forEach(field => {
         updateFieldElement(field);
+    debouncedSave();
     });
 }
 
@@ -403,6 +411,7 @@ function bindEvents() {
     $('btnClearBg').addEventListener('click', clearBgImage);
     $('printBgToggle').addEventListener('change', (e) => {
         state.printBg = e.target.checked;
+    debouncedSave();
     });
 
     // 模板
@@ -554,6 +563,7 @@ function onBgImageUpload(e) {
     const reader = new FileReader();
     reader.onload = () => {
         state.bgImage = reader.result;
+    debouncedSave();
         renderBgImage();
     };
     reader.readAsDataURL(file);
@@ -570,6 +580,7 @@ function renderBgImage() {
 
 function clearBgImage() {
     state.bgImage = null;
+    debouncedSave();
     renderBgImage();
 }
 
@@ -664,6 +675,7 @@ function confirmHeader(hasHeader) {
     renderFieldList();
     renderDataPreview();
     updatePropFieldOptions();
+    debouncedSave();
 
     closeHeaderModal();
 }
@@ -731,6 +743,7 @@ function onFieldDrop(e) {
     const mmY = py / MM_TO_PX;
 
     createField(fieldName, mmX, mmY);
+    debouncedSave();
 }
 
 // ===== 创建/渲染字段 =====
@@ -872,6 +885,7 @@ function onCanvasMouseMove(e) {
     state.dragOffset = { x: e.clientX, y: e.clientY };
 
     updateFieldElement(field);
+    debouncedSave();
     updatePropPanel();
 
     // 只显示参考线，不强制吸附
@@ -1009,6 +1023,7 @@ document.addEventListener('keydown', (e) => {
     }
 
     updateFieldElement(field);
+    debouncedSave();
     updatePropPanel();
 });
 
@@ -1064,6 +1079,7 @@ function updateSelectedField() {
     field.bold = $('propBold').checked;
 
     updateFieldElement(field);
+    debouncedSave();
 }
 
 function onColorPickerChange() {
@@ -1072,6 +1088,7 @@ function onColorPickerChange() {
     field.color = $('propColor').value;
     $('propColorHex').value = field.color;
     updateFieldElement(field);
+    debouncedSave();
 }
 
 function onColorHexChange() {
@@ -1087,6 +1104,7 @@ function onColorHexChange() {
         field.color = hex;
         $('propColor').value = hex;
         updateFieldElement(field);
+    debouncedSave();
     }
 }
 
@@ -1097,6 +1115,7 @@ function deleteSelectedField() {
     state.fields = state.fields.filter(f => f.id !== state.selectedField);
     deselectAll();
     updateFieldCount();
+    debouncedSave();
 }
 
 // ===== 模板保存/加载 =====
@@ -1179,6 +1198,7 @@ function loadTemplate(e) {
 
             updateFieldCount();
             deselectAll();
+            debouncedSave();
             alert('模板加载成功');
         } catch (err) {
             alert('模板加载失败: ' + err.message);
@@ -1294,6 +1314,7 @@ function loadProject(e) {
             updatePropFieldOptions();
             updateFieldCount();
             deselectAll();
+            debouncedSave();
 
             alert('工程加载成功');
         } catch (err) {
