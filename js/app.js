@@ -31,7 +31,111 @@ document.addEventListener('DOMContentLoaded', () => {
     initCanvas();
     scanSystemFonts();
     bindEvents();
+    restoreFromStorage(); // 页面加载时自动恢复上次配置
+    window.addEventListener('beforeunload', saveToStorage); // 刷新/关闭前自动保存
 });
+
+// ===== localStorage 自动保存/恢复 =====
+function saveToStorage() {
+    try {
+        const snapshot = {
+            paperWidth: state.paperWidth,
+            paperHeight: state.paperHeight,
+            bgImage: state.bgImage,
+            printBg: state.printBg,
+            zoom: state.zoom,
+            customFonts: state.customFonts,
+            fields: state.fields.map(f => ({
+                fieldName: f.fieldName,
+                x: f.x,
+                y: f.y,
+                width: f.width,
+                font: f.font,
+                size: f.size,
+                color: f.color,
+                align: f.align,
+                vAlign: f.vAlign,
+                bold: f.bold
+            })),
+            excelHeaders: state.excelHeaders,
+            excelData: state.excelData
+        };
+        localStorage.setItem('batchPrint_snapshot', JSON.stringify(snapshot));
+    } catch (e) {
+        // localStorage 可能已满或不可用
+    }
+}
+
+function restoreFromStorage() {
+    try {
+        const raw = localStorage.getItem('batchPrint_snapshot');
+        if (!raw) return;
+
+        const snap = JSON.parse(raw);
+        if (!snap.fields || snap.fields.length === 0) return;
+
+        // 恢复纸张
+        state.paperWidth = snap.paperWidth || 210;
+        state.paperHeight = snap.paperHeight || 297;
+        $('paperW').value = state.paperWidth;
+        $('paperH').value = state.paperHeight;
+
+        // 恢复缩放
+        state.zoom = snap.zoom || 1.0;
+        MM_TO_PX = BASE_MM_TO_PX * state.zoom;
+        $('zoomValue').textContent = Math.round(state.zoom * 100) + '%';
+
+        // 恢复背景
+        state.bgImage = snap.bgImage || null;
+        state.printBg = snap.printBg !== false;
+        $('printBgToggle').checked = state.printBg;
+        renderBgImage();
+
+        // 恢复字体
+        state.customFonts = snap.customFonts || [];
+
+        // 恢复字段
+        state.fields = [];
+        $('fieldLayer').innerHTML = '';
+        fieldIdCounter = 0;
+        if (snap.fields) {
+            snap.fields.forEach(sf => {
+                const field = {
+                    id: 'f_' + (++fieldIdCounter),
+                    fieldName: sf.fieldName,
+                    x: sf.x,
+                    y: sf.y,
+                    width: sf.width || 0,
+                    font: sf.font || 'SimSun',
+                    size: sf.size || 12,
+                    color: sf.color || '#000000',
+                    align: sf.align || 'left',
+                    vAlign: sf.vAlign || 'top',
+                    bold: sf.bold || false
+                };
+                state.fields.push(field);
+                renderField(field);
+            });
+        }
+
+        // 恢复 Excel
+        state.excelHeaders = snap.excelHeaders || [];
+        state.excelData = snap.excelData || [];
+
+        // 刷新 UI
+        updateCanvasSize();
+        renderFieldList();
+        renderDataPreview();
+        updatePropFieldOptions();
+        updateFieldCount();
+
+        $('excelInfo').innerHTML = state.excelData.length > 0
+            ? `共 <b>${state.excelData.length}</b> 行数据<br>${state.excelHeaders.length} 个字段`
+            : '';
+    } catch (e) {
+        // 解析失败则忽略
+    }
+}
 
 // ===== 扫描系统字体 =====
 function scanSystemFonts() {
