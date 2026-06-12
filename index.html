@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量打印系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <label>纸张：</label>
+                <select id="paperSize">
+                    <option value="a4" data-w="210" data-h="297">A4 (210×297mm)</option>
+                    <option value="a5" data-w="148" data-h="210">A5 (148×210mm)</option>
+                    <option value="letter" data-w="216" data-h="279">Letter (216×279mm)</option>
+                    <option value="custom">自定义</option>
+                </select>
+                <span id="customSize" class="hidden">
+                    <input type="number" id="paperW" value="210" min="10" max="500"> mm ×
+                    <input type="number" id="paperH" value="297" min="10" max="500"> mm
+                </span>
+            </div>
+            <div class="toolbar-group">
+                <button id="btnBgImage">📷 上传背景图</button>
+                <input type="file" id="bgImageInput" accept="image/*" hidden>
+                <button id="btnClearBg">清除背景</button>
+                <label class="toggle-label">
+                    <input type="checkbox" id="printBgToggle" checked>
+                    <span>打印时包含背景图</span>
+                </label>
+            </div>
+            <div class="toolbar-group">
+                <button id="btnSaveProject">💾 保存工程</button>
+                <button id="btnLoadProject">📂 加载工程</button>
+                <input type="file" id="projectInput" accept=".json" hidden>
+                <span class="toolbar-sep"></span>
+                <button id="btnSaveTemplate">💾 保存模板</button>
+                <button id="btnLoadTemplate">📂 加载模板</button>
+                <input type="file" id="templateInput" accept=".json" hidden>
+            </div>
+            <div class="toolbar-group">
+                <button id="btnPreview" class="btn-primary">👁 预览</button>
+                <button id="btnPrint" class="btn-primary">🖨 批量打印</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <!-- 左侧面板：数据 -->
+            <div class="panel panel-left">
+                <div class="panel-section">
+                    <h3>1. 导入Excel</h3>
+                    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+                    <div id="excelInfo" class="info-text"></div>
+                </div>
+                <div class="panel-section">
+                    <h3>2. 可用字段</h3>
+                    <div id="fieldList" class="field-list">
+                        <p class="placeholder">请先上传Excel</p>
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <h3>3. 数据预览</h3>
+                    <div id="dataPreview" class="data-preview">
+                        <p class="placeholder">暂无数据</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：画布 -->
+            <div class="panel panel-center">
+                <div class="canvas-wrapper">
+                    <div id="rulerContainer" class="ruler-container">
+                        <div class="ruler-corner"></div>
+                        <div id="rulerTop" class="ruler-top"></div>
+                        <div id="rulerLeft" class="ruler-left"></div>
+                        <div id="canvas" class="canvas">
+                            <div id="bgLayer" class="bg-layer"></div>
+                            <div id="fieldLayer" class="field-layer"></div>
+                            <div id="guideLayer" class="guide-layer">
+                                <div id="guideH" class="guide guide-h"></div>
+                                <div id="guideV" class="guide guide-v"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="canvas-info">
+                    <span id="canvasSize">210 × 297 mm</span>
+                    <span id="fieldCount">0 个字段</span>
+                </div>
+            </div>
+
+            <!-- 右侧面板：属性 -->
+            <div class="panel panel-right">
+                <div class="panel-section">
+                    <h3>字段属性</h3>
+                    <div id="propPanel" class="prop-panel disabled">
+                        <div class="prop-row">
+                            <label>绑定字段</label>
+                            <select id="propField"></select>
+                        </div>
+                        <div class="prop-row">
+                            <label>左边距 (mm)</label>
+                            <input type="number" id="propX" step="0.1">
+                        </div>
+                        <div class="prop-row">
+                            <label>上边距 (mm)</label>
+                            <input type="number" id="propY" step="0.1">
+                        </div>
+                        <div class="prop-row">
+                            <label>宽度 (mm)</label>
+                            <input type="number" id="propW" step="0.1" placeholder="自动">
+                        </div>
+                        <div class="prop-row">
+                            <label>字体</label>
+                            <input type="text" id="propFont" list="fontList" placeholder="选择或输入字体名称">
+                            <datalist id="fontList"></datalist>
+                        </div>
+                        <div class="font-actions">
+                            <button id="btnAddCustomFont" type="button">+ 添加自定义字体</button>
+                            <button id="btnRescanFonts" type="button">刷新字体列表</button>
+                        </div>
+                        <div id="customFontRow" class="prop-row hidden">
+                            <label>新字体名称</label>
+                            <input type="text" id="customFontName" placeholder="输入刚安装的字体名">
+                            <button id="btnConfirmAddFont" type="button" style="margin-top:5px;">确认添加</button>
+                        </div>
+                        <div class="prop-row">
+                            <label>字号 (pt)</label>
+                            <input type="number" id="propSize" min="1" max="200" value="12">
+                        </div>
+                        <div class="prop-row">
+                            <label>颜色</label>
+                            <div class="color-input-row">
+                                <input type="color" id="propColor" value="#000000">
+                                <input type="text" id="propColorHex" value="#000000" placeholder="#000000" maxlength="7">
+                            </div>
+                        </div>
+                        <div class="prop-row">
+                            <label>水平对齐</label>
+                            <select id="propAlign">
+                                <option value="left">左对齐</option>
+                                <option value="center">居中</option>
+                                <option value="right">右对齐</option>
+                            </select>
+                        </div>
+                        <div class="prop-row">
+                            <label>垂直对齐</label>
+                            <select id="propVAlign">
+                                <option value="top">顶部</option>
+                                <option value="middle">居中</option>
+                                <option value="bottom">底部</option>
+                            </select>
+                        </div>
+                        <div class="prop-row">
+                            <label>加粗</label>
+                            <input type="checkbox" id="propBold">
+                        </div>
+                        <div class="prop-actions">
+                            <button id="btnDeleteField" class="btn-danger">删除字段</button>
+                        </div>
+                    </div>
+                    <p id="noSelection" class="placeholder">点击画布中的字段进行编辑</p>
+                </div>
+                <div class="panel-section">
+                    <h3>操作提示</h3>
+                    <ul class="tips">
+                        <li>从左侧拖拽字段到画布</li>
+                        <li>点击字段选中，拖拽移动</li>
+                        <li>键盘方向键微调：0.1mm / Shift+方向：1mm</li>
+                        <li>拖拽时红色参考线提示对齐位置</li>
+                        <li>右侧精确调整位置和样式</li>
+                        <li>上传背景图对齐字段位置</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览弹窗 -->
+    <div id="previewModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>打印预览</h3>
+                <button class="btn-close" id="closePreview">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-nav">
+                    <button id="prevPage">&larr; 上一条</button>
+                    <span id="pageInfo">第 1 / 10 条</span>
+                    <button id="nextPage">下一条 &rarr;</button>
+                </div>
+                <div id="previewCanvas" class="preview-canvas"></div>
+                <div class="preview-footer" id="previewFooter">
+                    <button id="btnPrintFromPreview" class="btn-primary">确认打印</button>
+                    <button id="btnBackToRange">返回修改范围</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表头确认弹窗 -->
+    <div id="headerModal" class="modal hidden">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h3>确认Excel数据</h3>
+                <button class="btn-close" id="closeHeaderModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="header-confirm">
+                    <p class="header-question">Excel的第一行是否作为表头（字段名）？</p>
+                    <div class="header-preview" id="headerPreview"></div>
+                    <div class="header-actions">
+                        <button id="btnNoHeader">否，第一行也是数据</button>
+                        <button id="btnYesHeader" class="btn-primary">是，第一行是表头</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 打印范围弹窗 -->
+    <div id="printRangeModal" class="modal hidden">
+        <div class="modal-content" style="width: 360px;">
+            <div class="modal-header">
+                <h3>设置打印范围</h3>
+                <button class="btn-close" id="closePrintRange">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="print-range-form">
+                    <p class="range-info">Excel 数据共 <span id="rangeTotal">0</span> 行</p>
+                    <div class="range-row">
+                        <label>从第</label>
+                        <input type="number" id="rangeStart" value="1" min="1">
+                        <label>行</label>
+                    </div>
+                    <div class="range-row">
+                        <label>到第</label>
+                        <input type="number" id="rangeEnd" value="1" min="1">
+                        <label>行</label>
+                    </div>
+                    <div class="range-actions">
+                        <button id="btnCancelPrint">取消</button>
+                        <button id="btnPreviewThenPrint" class="btn-primary">预览后打印</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 打印页面容器 -->
+    <div id="printContainer" class="print-only"></div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
