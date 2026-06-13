@@ -259,10 +259,75 @@ function scanSystemFonts() {
         }
     }
 
-    // 填充 datalist（扫描到的 + 用户手动添加的）
-    const datalist = $('fontList');
+    // 填充字体下拉列表（扫描到的 + 用户手动添加的）
+    const fontListEl = $('fontList');
     const allFonts = [...new Set([...available, ...state.customFonts])];
-    datalist.innerHTML = allFonts.map(f => `<option value="${f}">`).join('');
+    // 排序：中文字体优先，然后英文字体
+    allFonts.sort((a, b) => {
+        const aIsCn = /[一-鿿]/.test(a);
+        const bIsCn = /[一-鿿]/.test(b);
+        if (aIsCn && !bIsCn) return -1;
+        if (!aIsCn && bIsCn) return 1;
+        return a.localeCompare(b);
+    });
+    state.allFonts = allFonts;
+    renderFontDropdown(allFonts);
+}
+
+let currentFontList = [];
+
+function renderFontDropdown(fonts) {
+    const container = $('fontList');
+    currentFontList = fonts;
+    if (!container) return;
+    if (fonts.length === 0) {
+        container.innerHTML = '<div class="font-list-empty">未检测到字体</div>';
+        return;
+    }
+    container.innerHTML = fonts.map(f => {
+        const isCustom = state.customFonts.includes(f);
+        const customTag = isCustom ? '<span class="font-tag-custom">自定义</span>' : '';
+        return `<div class="font-item" data-font="${escapeHtml(f)}">
+            <span class="font-item-name">${escapeHtml(f)}</span>
+            ${customTag}
+        </div>`;
+    }).join('');
+
+    // 绑定点击事件
+    container.querySelectorAll('.font-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const fontName = item.dataset.font;
+            $('propFont').value = fontName;
+            closeFontDropdown();
+            updateSelectedField();
+        });
+    });
+}
+
+function openFontDropdown() {
+    const dropdown = $('fontDropdown');
+    if (!dropdown) return;
+    dropdown.classList.remove('hidden');
+    $('fontSearch').value = '';
+    $('fontSearch').focus();
+    renderFontDropdown(state.allFonts || []);
+}
+
+function closeFontDropdown() {
+    const dropdown = $('fontDropdown');
+    if (!dropdown) return;
+    dropdown.classList.add('hidden');
+}
+
+function filterFontList(query) {
+    const q = query.trim().toLowerCase();
+    const fonts = state.allFonts || [];
+    if (!q) {
+        renderFontDropdown(fonts);
+        return;
+    }
+    const filtered = fonts.filter(f => f.toLowerCase().includes(q));
+    renderFontDropdown(filtered);
 }
 
 function addCustomFont() {
@@ -455,36 +520,6 @@ function bindEvents() {
     $('propX').addEventListener('input', updateSelectedField);
     $('propY').addEventListener('input', updateSelectedField);
     $('propW').addEventListener('input', updateSelectedField);
-    $('propFont').addEventListener('input', updateSelectedField);
-    $('propFont').addEventListener('change', updateSelectedField);
-    // 字体选择器：修复 Chrome/Safari datalist 有值时不弹列表的问题
-    let savedFontValue = '';
-    let isDatalistOpen = false;
-    $('propFont').addEventListener('focus', () => {
-        const input = $('propFont');
-        if (input.value && !isDatalistOpen) {
-            savedFontValue = input.value;
-            input.value = '';
-            isDatalistOpen = true;
-            // 部分浏览器支持 showPicker()
-            try { input.showPicker(); } catch (e) { /* ignore */ }
-        }
-    });
-    $('propFont').addEventListener('blur', () => {
-        const input = $('propFont');
-        isDatalistOpen = false;
-        if (!input.value && savedFontValue) {
-            input.value = savedFontValue;
-        } else if (input.value) {
-            savedFontValue = input.value;
-        }
-    });
-    // 输入时尝试触发字体实时预览（debounce 优化）
-    let fontInputTimeout;
-    $('propFont').addEventListener('input', () => {
-        clearTimeout(fontInputTimeout);
-        fontInputTimeout = setTimeout(updateSelectedField, 30);
-    });
     $('propSize').addEventListener('input', updateSelectedField);
     $('propColor').addEventListener('input', onColorPickerChange);
     $('propColorHex').addEventListener('input', onColorHexChange);
@@ -492,6 +527,33 @@ function bindEvents() {
     $('propVAlign').addEventListener('change', updateSelectedField);
     $('propBold').addEventListener('change', updateSelectedField);
     $('btnDeleteField').addEventListener('click', deleteSelectedField);
+
+    // 字体下拉列表交互
+    $('fontDropdownBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = $('fontDropdown');
+        if (dropdown.classList.contains('hidden')) {
+            openFontDropdown();
+        } else {
+            closeFontDropdown();
+        }
+    });
+    $('propFont').addEventListener('focus', () => {
+        openFontDropdown();
+    });
+    $('fontSearch').addEventListener('input', (e) => {
+        filterFontList(e.target.value);
+    });
+    // 点击外部关闭下拉
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.font-select-wrapper')) {
+            closeFontDropdown();
+        }
+    });
+    // 按 ESC 关闭下拉
+    $('fontSearch').addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeFontDropdown();
+    });
 
     // 自定义字体
     $('btnAddCustomFont').addEventListener('click', () => {

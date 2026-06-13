@@ -724,6 +724,134 @@ input[type="file"]:hover {
     font-size: 11px;
 }
 
+/* ===== 字体选择器（自定义下拉） ===== */
+.font-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.font-select-wrapper input[type="text"] {
+    flex: 1;
+    padding: 5px 26px 5px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 12px;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.2s;
+}
+
+.font-select-wrapper input[type="text"]:focus {
+    border-color: #1890ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(24,144,255,0.1);
+}
+
+.font-dropdown-btn {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+
+.font-dropdown-btn:hover {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.font-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    max-height: 240px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.font-dropdown.hidden {
+    display: none;
+}
+
+.font-search {
+    padding: 6px 10px;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    background: #fafafa;
+    color: #333;
+    outline: none;
+}
+
+.font-search::placeholder {
+    color: #bfbfbf;
+}
+
+.font-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 200px;
+    padding: 4px 0;
+}
+
+.font-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.font-item:hover {
+    background: #f0f7ff;
+    color: #1890ff;
+}
+
+.font-item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.font-tag-custom {
+    font-size: 10px;
+    color: #1890ff;
+    background: #f0f7ff;
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-left: 6px;
+}
+
+.font-list-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+}
+
 .color-input-row {
     display: flex;
     gap: 8px;

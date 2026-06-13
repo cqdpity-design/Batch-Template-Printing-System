@@ -186,8 +186,16 @@
                             </div>
                             <div class="prop-row">
                                 <label>字体</label>
-                                <input type="text" id="propFont" list="fontList" placeholder="选择或输入字体名称">
-                                <datalist id="fontList"></datalist>
+                                <div class="font-select-wrapper">
+                                    <input type="text" id="propFont" placeholder="选择或输入字体名称" autocomplete="off">
+                                    <button type="button" class="font-dropdown-btn" id="fontDropdownBtn" title="展开字体列表">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </button>
+                                    <div id="fontDropdown" class="font-dropdown hidden">
+                                        <input type="text" id="fontSearch" placeholder="搜索字体..." class="font-search">
+                                        <div id="fontList" class="font-list"></div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="font-actions">
                                 <button id="btnAddCustomFont" type="button">+ 添加字体</button>
