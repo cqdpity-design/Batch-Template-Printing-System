@@ -1242,27 +1242,61 @@ function deleteSelectedField() {
 }
 
 function bringFieldToFront() {
-    if (!state.selectedField) return;
+    if (!state.selectedField) {
+        showToast('请先选中一个字段', 'info');
+        return;
+    }
     const idx = state.fields.findIndex(f => f.id === state.selectedField);
     if (idx < 0) return;
     const field = state.fields.splice(idx, 1)[0];
     state.fields.push(field);
 
     const el = $(field.id);
-    if (el) $('fieldLayer').appendChild(el);
+    if (el) {
+        $('fieldLayer').appendChild(el);
+        el.classList.remove('layer-flash');
+        void el.offsetWidth; // 强制重排
+        el.classList.add('layer-flash');
+        setTimeout(() => el.classList.remove('layer-flash'), 500);
+    }
     debouncedSave();
+    showToast('字段已置顶', 'success');
 }
 
 function sendFieldToBack() {
-    if (!state.selectedField) return;
+    if (!state.selectedField) {
+        showToast('请先选中一个字段', 'info');
+        return;
+    }
     const idx = state.fields.findIndex(f => f.id === state.selectedField);
     if (idx < 0) return;
     const field = state.fields.splice(idx, 1)[0];
     state.fields.unshift(field);
 
     const el = $(field.id);
-    if (el) $('fieldLayer').insertBefore(el, $('fieldLayer').firstChild);
+    if (el) {
+        $('fieldLayer').insertBefore(el, $('fieldLayer').firstChild);
+        el.classList.remove('layer-flash');
+        void el.offsetWidth;
+        el.classList.add('layer-flash');
+        setTimeout(() => el.classList.remove('layer-flash'), 500);
+    }
     debouncedSave();
+    showToast('字段已置底', 'success');
+}
+
+// ===== Toast 提示 =====
+function showToast(message, type) {
+    const container = $('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type || 'info');
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }
 
 // ===== 模板保存/加载 =====

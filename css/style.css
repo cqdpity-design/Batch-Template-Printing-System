@@ -517,6 +517,62 @@ input[type="file"]:hover {
     color: #666;
 }
 
+/* ===== Toast 提示 ===== */
+.toast-container {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #333;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: toastIn 0.3s ease;
+    pointer-events: auto;
+}
+
+.toast.success {
+    border-left: 3px solid #52c41a;
+}
+
+.toast.info {
+    border-left: 3px solid #1890ff;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(20px); }
+}
+
+/* ===== 字段层级闪烁反馈 ===== */
+@keyframes layerFlash {
+    0%   { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.5); }
+    50%  { box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
+}
+
+.canvas-field.layer-flash {
+    animation: layerFlash 0.4s ease;
+}
+
 /* ===== 画布 ===== */
 .canvas-wrapper {
     display: flex;
