@@ -89,7 +89,8 @@ function restoreFromStorage() {
         if (!raw) return;
 
         const snap = JSON.parse(raw);
-        if (!snap.fields || snap.fields.length === 0) return;
+        // 有字段时恢复字段，没字段时也继续恢复纸张/缩放/背景/Excel
+        const hasFields = snap.fields && snap.fields.length > 0;
 
         // 恢复纸张
         state.paperWidth = snap.paperWidth || 210;
@@ -111,11 +112,11 @@ function restoreFromStorage() {
         // 恢复字体
         state.customFonts = snap.customFonts || [];
 
-        // 恢复字段
+        // 恢复字段（如果有）
         state.fields = [];
         $('fieldLayer').innerHTML = '';
         fieldIdCounter = 0;
-        if (snap.fields) {
+        if (hasFields) {
             snap.fields.forEach(sf => {
                 const field = {
                     id: 'f_' + (++fieldIdCounter),
