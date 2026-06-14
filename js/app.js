@@ -499,6 +499,7 @@ function bindEvents() {
     $('templateInput').addEventListener('change', loadTemplate);
 
     // 工程
+    $('btnNewProject').addEventListener('click', newProject);
     $('btnSaveProject').addEventListener('click', saveProject);
     $('btnLoadProject').addEventListener('click', () => $('projectInput').click());
     $('projectInput').addEventListener('change', loadProject);
@@ -1393,6 +1394,58 @@ function loadTemplate(e) {
     };
     reader.readAsText(file);
     e.target.value = '';
+}
+
+// ===== 新建工程 =====
+function newProject() {
+    // 有内容时确认是否放弃
+    if (state.fields.length > 0 || state.excelData.length > 0) {
+        if (!confirm('当前工程未保存的内容将丢失，确认新建？')) return;
+    }
+
+    // 重置所有状态
+    state.fields = [];
+    state.selectedField = null;
+    state.excelData = [];
+    state.excelHeaders = [];
+    state.bgImage = null;
+    state.printBg = true;
+    state.customFonts = [];
+    fieldIdCounter = 0;
+
+    // 重置纸张为 A4
+    state.paperWidth = 210;
+    state.paperHeight = 297;
+    $('paperSize').value = 'a4';
+    $('customSize').classList.add('hidden');
+    $('paperW').value = 210;
+    $('paperH').value = 297;
+
+    // 重置缩放
+    setZoom(1.0);
+
+    // 重置背景
+    $('printBgToggle').checked = true;
+
+    // 清空画布
+    $('fieldLayer').innerHTML = '';
+    renderBgImage();
+
+    // 清空 Excel 信息
+    $('excelInfo').innerHTML = '';
+
+    // 刷新所有 UI
+    updateCanvasSize();
+    renderFieldList();
+    renderDataPreview();
+    updatePropFieldOptions();
+    updateFieldCount();
+    deselectAll();
+
+    // 清空 localStorage
+    try { localStorage.removeItem('batchPrint_snapshot'); } catch (e) { /* ignore */ }
+
+    showToast('已新建工程', 'success');
 }
 
 // ===== 工程文件（模板 + Excel数据）=====
