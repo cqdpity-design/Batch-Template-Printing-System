@@ -142,6 +142,7 @@ function restoreFromStorage() {
 
         // 刷新 UI
         updateCanvasSize();
+        updatePrintPageSize();
         renderFieldList();
         renderDataPreview();
         updatePropFieldOptions();
@@ -515,6 +516,7 @@ function bindEvents() {
 
     // Excel
     $('excelInput').addEventListener('change', onExcelUpload);
+    $('btnClearExcel').addEventListener('click', clearExcelData);
 
     // 属性面板
     $('propField').addEventListener('change', updateSelectedField);
@@ -663,6 +665,7 @@ function onPaperChange() {
         $('paperW').value = state.paperWidth;
         $('paperH').value = state.paperHeight;
         updateCanvasSize();
+        updatePrintPageSize();
     }
 }
 
@@ -670,6 +673,20 @@ function onCustomSizeChange() {
     state.paperWidth = parseFloat($('paperW').value) || 210;
     state.paperHeight = parseFloat($('paperH').value) || 297;
     updateCanvasSize();
+    updatePrintPageSize();
+}
+
+// 动态维护打印专用的 @page size，避免最后一刻注入导致首页纸张异常
+function updatePrintPageSize() {
+    const styleId = 'dynamic-print-size';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        styleEl.media = 'print';
+        document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: ${state.paperWidth}mm ${state.paperHeight}mm; margin: 0; }`;
 }
 
 // ===== 背景图 =====
@@ -831,6 +848,25 @@ function renderDataPreview() {
     div.innerHTML = html;
 }
 
+function clearExcelData() {
+    if (state.excelData.length === 0 && state.excelHeaders.length === 0) {
+        showToast('没有已导入的 Excel 数据', 'info');
+        return;
+    }
+    if (!confirm('确定要清除已导入的 Excel 数据吗？字段、背景和纸张设置将保留。')) return;
+
+    state.excelHeaders = [];
+    state.excelData = [];
+    pendingExcelJson = null;
+
+    $('excelInfo').innerHTML = '';
+    renderFieldList();
+    renderDataPreview();
+    updatePropFieldOptions();
+    debouncedSave();
+    showToast('Excel 数据已清除', 'success');
+}
+
 function updatePropFieldOptions() {
     const sel = $('propField');
     sel.innerHTML = '<option value="">-- 选择字段 --</option>' +
@@ -852,10 +888,12 @@ function onFieldDrop(e) {
     if (!fieldName) return;
 
     // 计算放置位置（相对于画布，单位mm）
+    // 注意：画布实际绘制区域被 .ruler-container 的 padding-left/top: 24px 偏移，需扣除
     const canvas = $('canvas');
     const rect = canvas.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    const rulerPadding = 24;
+    const px = e.clientX - rect.left - rulerPadding;
+    const py = e.clientY - rect.top - rulerPadding;
     const mmX = px / MM_TO_PX;
     const mmY = py / MM_TO_PX;
 
@@ -1341,12 +1379,16 @@ function loadTemplate(e) {
         try {
             const template = JSON.parse(ev.target.result);
 
+            // 先完整重置工程状态，避免旧数据污染模板
+            newProject(true);
+
             // 恢复纸张
             state.paperWidth = template.paperWidth || 210;
             state.paperHeight = template.paperHeight || 297;
             $('paperW').value = state.paperWidth;
             $('paperH').value = state.paperHeight;
             updateCanvasSize();
+            updatePrintPageSize();
 
             // 恢复缩放
             if (template.zoom) {
@@ -1360,10 +1402,6 @@ function loadTemplate(e) {
             renderBgImage();
 
             // 恢复字段
-            state.fields = [];
-            $('fieldLayer').innerHTML = '';
-            fieldIdCounter = 0;
-
             if (template.fields) {
                 template.fields.forEach(tf => {
                     const field = {
@@ -1397,9 +1435,12 @@ function loadTemplate(e) {
 }
 
 // ===== 新建工程 =====
-function newProject() {
+function newProject(skipConfirm = false) {
+    // 取消任何待执行的自动保存，防止重置后被旧状态覆盖
+    clearTimeout(saveTimer);
+
     // 有内容时确认是否放弃
-    if (state.fields.length > 0 || state.excelData.length > 0) {
+    if (!skipConfirm && (state.fields.length > 0 || state.excelData.length > 0)) {
         if (!confirm('当前工程未保存的内容将丢失，确认新建？')) return;
     }
 
@@ -1433,9 +1474,11 @@ function newProject() {
 
     // 清空 Excel 信息
     $('excelInfo').innerHTML = '';
+    pendingExcelJson = null;
 
     // 刷新所有 UI
     updateCanvasSize();
+    updatePrintPageSize();
     renderFieldList();
     renderDataPreview();
     updatePropFieldOptions();
@@ -1445,7 +1488,9 @@ function newProject() {
     // 清空 localStorage
     try { localStorage.removeItem('batchPrint_snapshot'); } catch (e) { /* ignore */ }
 
-    showToast('已新建工程', 'success');
+    if (!skipConfirm) {
+        showToast('已新建工程', 'success');
+    }
 }
 
 // ===== 工程文件（模板 + Excel数据）=====
@@ -1508,6 +1553,7 @@ function loadProject(e) {
             $('paperW').value = state.paperWidth;
             $('paperH').value = state.paperHeight;
             updateCanvasSize();
+            updatePrintPageSize();
 
             // 恢复背景
             state.bgImage = project.bgImage || null;
@@ -1672,16 +1718,8 @@ function executePrint(startIdx, endIdx) {
     const printContainer = $('printContainer');
     printContainer.innerHTML = '';
 
-    // 动态注入打印专用的 @page size
-    const styleId = 'dynamic-print-size';
-    let styleEl = document.getElementById(styleId);
-    if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = styleId;
-        styleEl.media = 'print';
-        document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = `@page { size: ${state.paperWidth}mm ${state.paperHeight}mm; margin: 0; }`;
+    // 确保 @page size 已是最新
+    updatePrintPageSize();
 
     // 大批量打印：使用 DocumentFragment 减少重排
     const fragment = document.createDocumentFragment();
@@ -1692,13 +1730,34 @@ function executePrint(startIdx, endIdx) {
     }
     printContainer.appendChild(fragment);
 
-    // 等待字体和样式渲染完成
-    const count = endIdx - startIdx + 1;
-    const delay = Math.min(500, 100 + count * 2); // 最多500ms延迟
+    // 等待所有图片解码完成后再打印，避免渲染不全导致缺页
+    const images = Array.from(printContainer.querySelectorAll('.page-bg'));
+    const decodePromises = images.map(img => {
+        if (img.decode) {
+            return img.decode().catch(() => {});
+        }
+        return new Promise(resolve => {
+            if (img.complete) {
+                resolve();
+            } else {
+                img.onload = resolve;
+                img.onerror = resolve;
+            }
+        });
+    });
 
-    setTimeout(() => {
-        window.print();
-    }, delay);
+    const count = endIdx - startIdx + 1;
+    const maxWait = Math.min(3000, 500 + count * 5); // 根据页数动态延长等待上限
+
+    Promise.race([
+        Promise.all(decodePromises),
+        new Promise(resolve => setTimeout(resolve, maxWait))
+    ]).then(() => {
+        // 给浏览器一次 layout/paint 机会，确保 @page size 生效
+        requestAnimationFrame(() => {
+            window.print();
+        });
+    });
 }
 
 function createPrintPage(row, forPrint) {
@@ -1719,10 +1778,14 @@ function createPrintPage(row, forPrint) {
 
     // 背景图（仅在预览或用户勾选"打印包含背景"时显示）
     if (state.bgImage && (!forPrint || state.printBg)) {
-        const img = document.createElement('img');
-        img.className = 'page-bg';
-        img.src = state.bgImage;
-        page.appendChild(img);
+        if (forPrint) {
+            page.style.backgroundImage = `url(${state.bgImage})`;
+        } else {
+            const img = document.createElement('img');
+            img.className = 'page-bg';
+            img.src = state.bgImage;
+            page.appendChild(img);
+        }
     }
 
     // 字段
@@ -1752,14 +1815,14 @@ function createPrintPage(row, forPrint) {
         el.style.textAlign = field.align;
         el.style.fontWeight = field.bold ? 'bold' : 'normal';
 
-        // 垂直对齐：通过 transform 调整
-        const transforms = [];
-        if (field.vAlign === 'middle') transforms.push('translateY(-50%)');
-        else if (field.vAlign === 'bottom') transforms.push('translateY(-100%)');
-        if (transforms.length > 0) {
-            el.style.transform = transforms.join(' ');
-        } else {
-            el.style.transform = ''; // P0: 重置无垂直对齐时的 transform
+        // 垂直对齐：通过 flex + 固定行高实现，避免 transform 导致的位置偏移
+        const lineHeightMm = field.size * 0.352778; // 1pt ≈ 0.352778mm
+        el.style.lineHeight = lineHeightMm + 'mm';
+        el.style.height = lineHeightMm + 'mm';
+        el.style.alignItems = getVAlignStyle(field.vAlign);
+        // 当设置宽度后，水平对齐由 textAlign 控制；没宽度时保持 inline flex
+        if (field.width > 0) {
+            el.style.justifyContent = getHAlignStyle(field.align);
         }
 
         const idx = state.excelHeaders.indexOf(field.fieldName);
@@ -1773,6 +1836,14 @@ function createPrintPage(row, forPrint) {
     });
 
     return page;
+}
+
+function getHAlignStyle(align) {
+    switch (align) {
+        case 'center': return 'center';
+        case 'right': return 'flex-end';
+        default: return 'flex-start';
+    }
 }
 
 // ===== 打印后清理 =====
